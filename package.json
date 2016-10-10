@@ -1,0 +1,35 @@
+{
+  "name": "dataloader-sequelize-wrapper",
+  "version": "1.0.0",
+  "description": "wrap your Sequelize objects in a dataloader caching layer",
+  "main": "index.es5.js",
+  "jsnext:main": "index.js",
+  "scripts": {
+    "build": "babel --presets es2015 index.js > index.es5.js",
+    "preversion": "npm run build",
+    "version": "git add . --all",
+    "postversion": "git push --follow-tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattecapu/dataloader-sequelize-wrapper.git"
+  },
+  "keywords": [
+    "sequelize",
+    "dataloader",
+    "cache"
+  ],
+  "author": "Matteo Capucci <mattecapu@live.it>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mattecapu/dataloader-sequelize-wrapper/issues"
+  },
+  "homepage": "https://github.com/mattecapu/dataloader-sequelize-wrapper#readme",
+  "dependencies": {
+    "dataloader": "^1.2.0"
+  },
+  "devDependencies": {
+    "babel-cli": "6.16.0",
+    "babel-preset-es2015": "6.16.0"
+  }
+}
