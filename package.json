@@ -1,6 +1,6 @@
 {
   "name": "dataloader-sequelize-wrapper",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "wrap your Sequelize objects in a dataloader caching layer",
   "main": "index.es5.js",
   "jsnext:main": "index.js",
