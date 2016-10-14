@@ -38,7 +38,7 @@ export default class Cache {
 					where: { [model.primaryKeyAttribute]: ids }
 				}).then((instances) =>
 					instances
-						.map((instance) => new CachingWrapper(instance, this))
+						.map((instance) => wrapAssociationsCalls(instance, this))
 						.sort((a, b) => {
 							const indexOfA = normalizedIDs.indexOf(a[model.primaryKeyAttribute].toString());
 							const indexOfB = normalizedIDs.indexOf(b[model.primaryKeyAttribute].toString());
@@ -57,96 +57,102 @@ export default class Cache {
 	}
 }
 
-class CachingWrapper {
-	constructor(sequelizeObject, cache) {
-		/* clone attributes */
-		const attributes = sequelizeObject.__proto__.attributes;
-		attributes.forEach((attribute) => {
-			this[attribute] = sequelizeObject[attribute];
-		});
+function wrapAssociationsCalls(sequelizeObject, cache) {
+	/* wrap associations accessors to use cache */
+	const associations = sequelizeObject.__proto__.Model.associations;
+	const associationsCache = new Map();
 
-		/* wrap associations accessors to use cache */
-		const associations = sequelizeObject.__proto__.Model.associations;
-		this.associationsCache = new Map();
-		Object.keys(associations).forEach((associationKey) => {
-			const association = associations[associationKey];
+	Object.keys(associations).forEach((associationKey) => {
+		const association = associations[associationKey];
 
-			const accessors = association.accessors;
-			const associationName = association.associationAccessor;
-			const associatedModel = association.target;
-			const associatedPK = associatedModel.primaryKeyAttribute;
+		const accessors = association.accessors;
+		const associationName = association.associationAccessor;
+		const associatedModel = association.target;
+		const associatedPK = associatedModel.primaryKeyAttribute;
 
-			this[accessors.get] = () => {
-				const associatedModelCache = cache.from(associatedModel.name);
-				let primeCachePromise = new Promise(res => res());
+		const originalAssociationGetAccessor =
+			sequelizeObject[accessors.get].bind(sequelizeObject);
 
-				if (!this.associationsCache.has(associationName)) {
-					if (association.associationType === 'BelongsTo') {
-						/* this is probably already cached */
-						primeCachePromise =
-							associatedModelCache.loadMany([
-								sequelizeObject[association.foreignKeyAttribute.name]
-							]);
-					} else {
-						/* fetch, cache relationship, prime global cache */
-						primeCachePromise =
-							sequelizeObject[accessors.get]().then((result) => {
-								/* as array */
-								const instances = [].concat(result);
+		sequelizeObject[accessors.get] = (...args) => {
+			/* can't really handle the general case */
+			if (args.length > 0) {
+				return originalAssociationGetAccessor.apply(sequelizeObject, args);
+			}
 
-								/* prime global cache only with new objects
-								(otherwise it may rewrite older objects which may have relationships already cached,
-								thus reducing cache hits) */
-								instances.filter((instance) =>
-									!associatedModelCache.has(instance[associatedPK])
-								).forEach((instance) =>
-									associatedModelCache.prime(
-										instance[associatedPK],
-										new CachingWrapper(instance, cache)
-									)
-								);
+			const associatedModelCache = cache.from(associatedModel.name);
 
-								return instances;
-							});
-					}
+			/* assume cache is already primed */
+			let primeCachePromise = new Promise(res => res());
 
-					/* cache results' IDs */
+			if (!associationsCache.has(associationName)) {
+				if (association.associationType === 'BelongsTo') {
+					/* this is probably already cached */
 					primeCachePromise =
-						primeCachePromise.then((instances) =>
-							this.associationsCache.set(
-								associationName,
-								instances.map(x => x[associatedPK])
-							)
-						);
+						associatedModelCache.loadMany([
+							sequelizeObject[association.foreignKeyAttribute.name]
+						]);
+				} else {
+					/* fetch, cache relationship, prime global cache */
+					primeCachePromise =
+						originalAssociationGetAccessor().then((result) => {
+							/* as array */
+							const instances = [].concat(result);
+
+							/* prime global cache only with new objects
+							(otherwise it may rewrite older objects which may have relationships already cached,
+							thus reducing cache hits) */
+							instances.filter((instance) =>
+								!associatedModelCache.has(instance[associatedPK])
+							).forEach((instance) =>
+								associatedModelCache.prime(
+									instance[associatedPK],
+									wrapAssociationsCalls(instance, cache)
+								)
+							);
+
+							return instances;
+						});
 				}
 
-				return primeCachePromise.then(() =>
-					associatedModelCache.loadMany(this.associationsCache.get(associationName))
-				).then((results) => {
-					if (association.isSingleAssociation) {
-						return results[0];
-					} else {
-						return results;
-					}
-				});
-			};
-
-			if (accessors.hasSingle) {
-				this[accessors.hasSingle] = sequelizeObject[accessors.hasSingle].bind(sequelizeObject);
-			}
-			if (accessors.hasAll) {
-				this[accessors.hasAll] = sequelizeObject[accessors.hasAll].bind(sequelizeObject);
+				/* cache results' IDs */
+				primeCachePromise =
+					primeCachePromise.then((instances) =>
+						associationsCache.set(
+							associationName,
+							instances.map(x => x[associatedPK])
+						)
+					);
 			}
 
-			if (accessors.count) {
-				this[accessors.count] = () => {
-					if (!this.associationsCache.has(associationName)) {
-						return sequelizeObject[accessors.count]();
-					} else {
-						return this.associationsCache.get(associationName).length;
-					}
+			return primeCachePromise.then(() =>
+				associatedModelCache.loadMany(associationsCache.get(associationName))
+			).then((results) => {
+				if (association.isSingleAssociation) {
+					return results[0];
+				} else {
+					return results;
+				}
+			});
+		};
+
+		if (accessors.count) {
+			const originalAssociationCountAccessor =
+				sequelizeObject[accessors.count].bind(sequelizeObject);
+
+			sequelizeObject[accessors.count] = (...args) => {
+				/* can't really handle the general case */
+				if (args.length > 0) {
+					return originalAssociationCountAccessor.apply(sequelizeObject, args);
+				}
+
+				if (!associationsCache.has(associationName)) {
+					return originalAssociationCountAccessor();
+				} else {
+					return associationsCache.get(associationName).length;
 				}
 			}
-		});
-	}
+		}
+	});
+
+	return sequelizeObject;
 }
