@@ -34,7 +34,7 @@ export default function wrapInstanceWithCache(sequelizeObject, cache) {
 					/* this is probably already cached */
 					primeCachePromise =
 						associatedModelCache.loadMany([
-							sequelizeObject[association.foreignKeyAttribute.name]
+							sequelizeObject[association.foreignKey]
 						]);
 				} else {
 					/* fetch, cache relationship, prime global cache */
