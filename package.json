@@ -2,12 +2,10 @@
   "name": "dataloader-sequelize-wrapper",
   "version": "2.0.0",
   "description": "wrap your Sequelize objects in a dataloader caching layer",
-  "main": "index.es5.js",
-  "jsnext:main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "build": "babel --presets es2015 index.js > index.es5.js",
+    "build": "babel --presets es2015 src/ -d lib/",
     "preversion": "npm run build",
-    "version": "git add . --all",
     "postversion": "git push --follow-tags"
   },
   "repository": {

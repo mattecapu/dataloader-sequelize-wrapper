@@ -1,63 +1,8 @@
-import DataLoader from 'dataloader';
+/*!
+	Wrap relationships accessors of a Sequelize object to use the cache provided
+*/
 
-class PeekingDataLoader extends DataLoader {
-	constructor(fn) {
-		super(fn);
-		this.keys = new Set();
-	}
-
-	load(key) {
-		this.keys.add(key.toString());
-		return super.load(key.toString());
-	}
-	loadMany(keys) {
-		keys.forEach(key => this.keys.add(key.toString()));
-		return super.loadMany(keys.map(x => x.toString()));
-	}
-	prime(key, value) {
-		this.keys.add(key.toString());
-		return super.prime(key.toString(), value);
-	}
-
-	has(key) {
-		return this.keys.has(key.toString());
-	}
-}
-
-export default class Cache {
-	constructor(ORM) {
-		this.ORM = ORM;
-		this.caches = {};
-	}
-	from(modelName) {
-		if (!this.caches[modelName]) {
-			const model = this.ORM.models[modelName];
-			this.caches[modelName] = new PeekingDataLoader((ids) => {
-				const normalizedIDs = ids.map(x => x.toString());
-				return model.findAll({
-					where: { [model.primaryKeyAttribute]: ids }
-				}).then((instances) =>
-					instances
-						.map((instance) => wrapAssociationsCalls(instance, this))
-						.sort((a, b) => {
-							const indexOfA = normalizedIDs.indexOf(a[model.primaryKeyAttribute].toString());
-							const indexOfB = normalizedIDs.indexOf(b[model.primaryKeyAttribute].toString());
-							if (indexOfA < indexOfB) {
-								return -1;
-							} else if (indexOfA > indexOfB) {
-								return +1;
-							} else {
-								return 0
-							}
-						})
-				)
-			});
-		}
-		return this.caches[modelName];
-	}
-}
-
-function wrapAssociationsCalls(sequelizeObject, cache) {
+export default function wrapInstanceWithCache(sequelizeObject, cache) {
 	/* wrap associations accessors to use cache */
 	const associations = sequelizeObject.__proto__.Model.associations;
 	const associationsCache = new Map();
@@ -106,7 +51,7 @@ function wrapAssociationsCalls(sequelizeObject, cache) {
 							).forEach((instance) =>
 								associatedModelCache.prime(
 									instance[associatedPK],
-									wrapAssociationsCalls(instance, cache)
+									wrapInstanceWithCache(instance, cache)
 								)
 							);
 
