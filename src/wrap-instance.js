@@ -1,6 +1,14 @@
 /*!
 	Wrap relationships accessors of a Sequelize object to use the cache provided
 */
+import createLogFunction from 'loggety-mclogface';
+
+const warn = createLogFunction({
+	tag: 'dataloader-sequelize-wrapper',
+	type: 'warn',
+	color: 'yellow',
+	uppercase: false
+});
 
 export default function wrapInstanceWithCache(sequelizeObject, cache) {
 	/* wrap associations accessors to use cache */
@@ -109,12 +117,12 @@ export default function wrapInstanceWithCache(sequelizeObject, cache) {
 		]
 		.filter(x => !!x)
 		.forEach((accessorName) => {
-			const originalAssociationSetAccessor =
+			const originalAssociationAccessor =
 				sequelizeObject[accessorName].bind(sequelizeObject);
 
 			sequelizeObject[accessorName] = (...args) => {
-				console.warn(`dataloader-sequelize-wrapper: you are calling '${accessorName}' on a cached object, please be careful as this may leave the cache in an inconsistent state.`)
-				return originalAssociationSetAccessor.apply(sequelizeObject, args);
+				warn(`dataloader-sequelize-wrapper: you are calling '${accessorName}' on a cached object, please be careful as this may leave the cache in an inconsistent state.`);
+				return originalAssociationAccessor.apply(sequelizeObject, args);
 			};
 		});
 	});

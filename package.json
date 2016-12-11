@@ -24,7 +24,8 @@
   },
   "homepage": "https://github.com/mattecapu/dataloader-sequelize-wrapper#readme",
   "dependencies": {
-    "dataloader": "^1.2.0"
+    "dataloader": "^1.2.0",
+    "loggety-mclogface": "^1.0.1"
   },
   "devDependencies": {
     "babel-cli": "6.18.0",
