@@ -2,7 +2,7 @@
 	A trans-model cache object
 */
 
-import PeekingDataLoader from './peeking-dataloader';
+import ImmutableDataLoader from './immutable-dataloader';
 import wrapInstanceWithCache from './wrap-instance';
 
 /* Normalizes ID to a common representation.
@@ -14,7 +14,9 @@ const loadingFunction = (model, cache) =>
 	(ids) => {
 		const normalizedIDs = ids.map(normalizeID);
 		return model.findAll({
-			where: { [model.primaryKeyAttribute]: ids }
+			where: {
+				[model.primaryKeyAttribute]: ids
+			}
 		}).then((instances) =>
 			instances
 				.map((instance) => wrapInstanceWithCache(instance, cache))
@@ -43,7 +45,7 @@ export default class Cache {
 		if (!this.caches[modelName]) {
 			const model = this.ORM.models[modelName];
 			this.caches[modelName] =
-				new PeekingDataLoader(loadingFunction(model, this));
+				new ImmutableDataLoader(loadingFunction(model, this));
 		}
 
 		return this.caches[modelName];
