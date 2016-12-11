@@ -97,6 +97,26 @@ export default function wrapInstanceWithCache(sequelizeObject, cache) {
 				}
 			}
 		}
+
+		/* mutation accessors: fire a warning */
+		[
+			accessors.set,
+			accessors.add,
+			accessors.addMultiple,
+			accessors.create,
+			accessors.remove,
+			accessors.removeMultiple
+		]
+		.filter(x => !!x)
+		.forEach((accessorName) => {
+			const originalAssociationSetAccessor =
+				sequelizeObject[accessorName].bind(sequelizeObject);
+
+			sequelizeObject[accessorName] = (...args) => {
+				console.warn(`dataloader-sequelize-wrapper: you are calling '${accessorName}' on a cached object, please be careful as this may leave the cache in an inconsistent state.`)
+				return originalAssociationSetAccessor.apply(sequelizeObject, args);
+			};
+		});
 	});
 
 	return sequelizeObject;
