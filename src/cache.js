@@ -12,17 +12,25 @@ const normalizeID = x => x.toString();
 
 const loadingFunction = (model, cache) =>
 	(ids) => {
+		/* normalized string representation of requested IDs */
 		const normalizedIDs = ids.map(normalizeID);
+		const getNormalizedId = (obj) =>
+			normalizedIDs.indexOf(
+				normalizeID(obj[model.primaryKeyAttribute])
+			);
+
 		return model.findAll({
 			where: {
 				[model.primaryKeyAttribute]: ids
 			}
 		}).then((instances) =>
 			instances
-				.map((instance) => wrapInstanceWithCache(instance, cache))
+				.map((instance) =>
+					wrapInstanceWithCache(instance, cache)
+				)
 				.sort((a, b) => {
-					const indexOfA = normalizedIDs.indexOf(normalizeID(a[model.primaryKeyAttribute]));
-					const indexOfB = normalizedIDs.indexOf(normalizeID(b[model.primaryKeyAttribute]));
+					const indexOfA = getNormalizedId(a);
+					const indexOfB = getNormalizedId(b);
 					if (indexOfA < indexOfB) {
 						return -1;
 					} else if (indexOfA > indexOfB) {
