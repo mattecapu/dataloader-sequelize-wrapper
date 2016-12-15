@@ -68,8 +68,10 @@ Delete the object with the given ID from the cache
 ##### `clearAll()`
 Wipes the cache
 
-* **`interface AugmentedSequelizeObject`**
-It's a modified version of a Sequelize object, which exposes every attribute a normal object does but only `get*()`, `has*()` and `count*()` accessors for relationships. When invoking `get*()` methods, relationships are also loaded from cache and stored.
+#### `interface AugmentedSequelizeObject`
+It's a modified version of a Sequelize object, which exposes every attribute a normal object does but wraps `get*()`, `has*()` and `count*()` accessors for relationships. When invoking `get*()` methods, relationships are also loaded from cache and stored.
+Calling any method with args will disable caching for that call.
+Calling `add*()`, `set*()`, `create*()` and `remove*()` accessors will "work" (i.e. won't throw) but will fire a warning and obliterate consistency. Don't do that.
 
 ## Contribution
 PRs and issues are welcome! You can always [tweet me](https://twitter.com/user/mattecapu) anyway.
