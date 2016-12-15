@@ -2,7 +2,7 @@
 	A trans-model cache object
 */
 
-import ImmutableDataLoader from './immutable-dataloader';
+import DataLoaderWithPeeking from './dataloader-with-peeking';
 import wrapInstanceWithCache from './wrap-instance';
 
 /* Normalizes ID to a common representation.
@@ -53,7 +53,7 @@ export default class Cache {
 		if (!this.caches[modelName]) {
 			const model = this.ORM.models[modelName];
 			this.caches[modelName] =
-				new ImmutableDataLoader(loadingFunction(model, this));
+				new DataLoaderWithPeeking(loadingFunction(model, this));
 		}
 
 		return this.caches[modelName];

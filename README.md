@@ -42,31 +42,34 @@ This is achieved through:
 
 * **Smart caching**. The cache is aware of your Sequelize schema and thus can intercede also when fetching relationship. Thus objects fetched from an association, like in the example, are cached too. This exponentially improves the hit rate of the cache.
 
-* **Immutability**. Objects may be stored but not modified or deleted. The only thing you can do (unless you want to mess up with the internals) is throw away the cache object altogheter.
-This may seem restrictive but isn't really a problem for the use cases I had in mind when I wrote the library. It means you can use this just for fetching data, and that the cache is designed to be short-lived (I suggest to use one per request).
+* **Immutability**. No object can be modified to avoid consistency disasters. The only allowed operations are addition and deletion from the cache.
 
 * **Minimal API change**. Your code stays the same, but under the hood Sequelize objects are augmented with caching. If you wrote your code neatly, it will be just matter of converting `sequelize.where` calls to `cache.from.load` calls.
-If your fetching logic isn't *pure*, the immutability will give you problems (but expect problems to always come up from an idempotent interface with a non-idempotent implementation).
+If your fetching logic isn't *pure*, immutability will give you problems (but expect problems to always come up from an idempotent interface with a non-idempotent implementation).
 
 ## Non-features
-Because of immutability, no mutating method is exposed, and accessing mutators on an augmented Sequelize object will fire a warning.
-Also the whole thing is designed to work with full objects, so it doesn't support options to any of the methods it wraps with caching. This is unlikely to change in the future because handling the general case and tracking partial objects is way more difficult and prone to error.
-For a large part of the use cases I can imagine, this is not a problem. Anyway feel free to open an issue if this design becomes too restrictive.
+Because of immutability, accessing mutating methods on an augmented Sequelize object will fire a warning.
+Also the whole thing is designed to work with full objects, so it doesn't support options for any of the methods it wraps with caching. This is unlikely to change in the future because handling the general case and tracking partial objects is way more difficult and prone to error.
 
 ## API
 
 * **`class Cache`**
 It's a container for a dictionary of dataloader-like caches. Each of your Sequelize models gets its cache (lazily).
-** **`Cache.from(modelName: string): ImmutableDataLoader`**
+
+** **`Cache.from(modelName: string): DataLoaderWithPeeking`**
 Get the cache for model `modelName`.
 
-* **class ImmutableDataLoader**
-It's a [dataloader cache](https://github.com/facebook/dataloader) which does not allow mutations (no `clear*()` methods).
-Objects of this class are returned by `Cache.from`.
-** **`ImmutableDataLoader.load/loadMany(id: vary): AugmentedSequelizeObject**
-Load objects with the given IDs to cache and returns a promise to them. Objects returned are augmented objects. Order is preserved when possible.
+* **`class DataLoader`**
+It's a [dataloader cache](https://github.com/facebook/dataloader). Objects of this class are returned by `Cache.from`.
 
-* **interface AugmentedSequelizeObject**
+** **`DataLoader.load/loadMany(id: vary): AugmentedSequelizeObject**
+Load objects with the given IDs to cache and returns a promise to them. Objects returned are augmented objects. Order is preserved when possible.
+** **`DataLoader.clear(id: vary)`**
+Delete the object with the given ID from the cache
+** **`DataLoader.clearAll()`**
+Wipes the cache
+
+* **`interface AugmentedSequelizeObject`**
 It's a modified version of a Sequelize object, which exposes every attribute a normal object does but only `get*()`, `has*()` and `count*()` accessors for relationships. When invoking `get*()` methods, relationships are also loaded from cache and stored.
 
 ## Contribution
