@@ -22,4 +22,14 @@ export default class ImmutableDataLoader {
 	has(key) {
 		return this.keys.has(key.toString());
 	}
+	
+	clear(key) {
+		this.keys.delete(key.toString());
+		return this.cache.clear(key.toString());
+	}
+	
+	clearAll() {
+		this.keys.clear()
+		return this.cache.clearAll();
+	}
 }
