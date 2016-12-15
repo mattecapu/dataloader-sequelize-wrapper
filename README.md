@@ -53,20 +53,19 @@ Also the whole thing is designed to work with full objects, so it doesn't suppor
 
 ## API
 
-* **`class Cache`**
+#### `class Cache`
 It's a container for a dictionary of dataloader-like caches. Each of your Sequelize models gets its cache (lazily).
-
-** **`Cache.from(modelName: string): DataLoaderWithPeeking`**
+##### `from(modelName: string): DataLoader`
 Get the cache for model `modelName`.
 
-* **`class DataLoader`**
+#### `class DataLoader`
 It's a [dataloader cache](https://github.com/facebook/dataloader). Objects of this class are returned by `Cache.from`.
 
-** **`DataLoader.load/loadMany(id: vary): AugmentedSequelizeObject**
+##### `load/loadMany(id: vary): AugmentedSequelizeObject`
 Load objects with the given IDs to cache and returns a promise to them. Objects returned are augmented objects. Order is preserved when possible.
-** **`DataLoader.clear(id: vary)`**
+##### `clear(id: vary)`
 Delete the object with the given ID from the cache
-** **`DataLoader.clearAll()`**
+##### `clearAll()`
 Wipes the cache
 
 * **`interface AugmentedSequelizeObject`**
