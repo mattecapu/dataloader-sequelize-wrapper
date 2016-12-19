@@ -23,23 +23,26 @@ const loadingFunction = (model, cache) =>
 			where: {
 				[model.primaryKeyAttribute]: ids
 			}
-		}).then((instances) =>
-			instances
-				.map((instance) =>
-					wrapInstanceWithCache(instance, cache)
-				)
-				.sort((a, b) => {
-					const indexOfA = getNormalizedId(a);
-					const indexOfB = getNormalizedId(b);
-					if (indexOfA < indexOfB) {
-						return -1;
-					} else if (indexOfA > indexOfB) {
-						return +1;
+		}).then((instances) => {
+			const fetchedIDs =
+				instances
+					.map(x => x[model.primaryKeyAttribute])
+					.map(normalizeID);
+
+			/* map each ID to the fetched instance,
+			or to null if it didn't fetch anything */
+			return normalizedIDs
+				.map((id) => {
+					const indexOf =
+						fetchedIDs.indexOf(id);
+
+					if (indexOf >= 0) {
+						return wrapInstanceWithCache(instances[indexOf], cache);
 					} else {
-						return 0
+						return null;
 					}
 				})
-		)
+		});
 	};
 
 export default class Cache {
