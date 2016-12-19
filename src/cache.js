@@ -14,10 +14,6 @@ const loadingFunction = (model, cache) =>
 	(ids) => {
 		/* normalized string representation of requested IDs */
 		const normalizedIDs = ids.map(normalizeID);
-		const getNormalizedId = (obj) =>
-			normalizedIDs.indexOf(
-				normalizeID(obj[model.primaryKeyAttribute])
-			);
 
 		return model.findAll({
 			where: {
