@@ -17,21 +17,22 @@ const mySequelizeOrm = new Sequelize({
 
 const cache = new Cache(mySequelizeOrm);
 
-/* provide primary keys to the load() method */
+/* provide a primary key to the load() method */
 cache.from('mymodel').load(2)
 	.then(x => console.log(x.id));
 
-/* object 2 is not fetched again */
+/* object 2 is not fetched again, object 1 and 3 are */
 cache.from('mymodel').loadMany([ 1, 2, 3 ])
 	.then(x => x.forEach(y => console.log(y.id)));
 
-/* the cached object exposes all the get*() methods */
+/* a cached object exposes all the get*() methods */
 cache.from('mymodel').load(4)
 	/* the associated object is fetched and cached as well */
 	.then(x => x.getAssociatedObject())
 	.then(x => console.log(x.id)) // 5
 
-/* object 5 it's in cache now */
+/* object 5 is in cache now and thus
+won't be refetched by the following code */
 cache.from('myassociatedmodel').load(5)
 	.then(x => console.log(x.id))
 ```
@@ -55,18 +56,23 @@ Also the whole thing is designed to work with full objects, so it doesn't suppor
 
 #### `class Cache`
 It's a container for a dictionary of dataloader-like caches. Each of your Sequelize models gets its cache (lazily).
-##### `from(modelName: string): DataLoader`
+
+##### ↪ `from(modelName: string): DataLoader`
 Get the cache for model `modelName`.
+
 
 #### `class DataLoader`
 It's a [dataloader cache](https://github.com/facebook/dataloader). Objects of this class are returned by `Cache.from`.
 
-##### `load/loadMany(id: vary): AugmentedSequelizeObject`
+##### ↪ `load/loadMany(id: vary): AugmentedSequelizeObject`
 Load objects with the given IDs to cache and returns a promise to them. Objects returned are augmented objects. Order is preserved when possible.
-##### `clear(id: vary)`
+
+##### ↪ `clear(id: vary)`
 Delete the object with the given ID from the cache
-##### `clearAll()`
+
+##### ↪ `clearAll()`
 Wipes the cache
+
 
 #### `interface AugmentedSequelizeObject`
 It's a modified version of a Sequelize object, which exposes every attribute a normal object does but wraps `get*()`, `has*()` and `count*()` accessors for relationships. When invoking `get*()` methods, relationships are also loaded from cache and stored.
